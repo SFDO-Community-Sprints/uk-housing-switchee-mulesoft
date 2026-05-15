@@ -1,47 +1,32 @@
 <mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:sdc="http://www.mulesoft.org/schema/mule/sdc" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:switchee-client-api="http://www.mulesoft.org/schema/mule/switchee-client-api" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd  http://www.mulesoft.org/schema/mule/switchee-client-api http://www.mulesoft.org/schema/mule/switchee-client-api/current/mule-switchee-client-api.xsd  http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
 http://www.mulesoft.org/schema/mule/sdc http://www.mulesoft.org/schema/mule/sdc/current/mule-sdc.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-    <http:request-config name="Request-config">
-        <http:request-connection host="api-auth.demo.switchee.co" port="443" protocol="HTTPS"></http:request-connection>
-    </http:request-config>
-    <http:request-config name="Request-config-insights">
-        <http:request-connection host="api.demo.switchee.co" port="443" protocol="HTTPS"></http:request-connection>
-    </http:request-config>
-    <salesforce:sfdc-config name="Sfdc-config">
-        <salesforce:basic-connection url="https://login.salesforce.com/services/Soap/u/61.0" password="Salesforce1" username="sfs@sfs-566.demo"></salesforce:basic-connection>
-    </salesforce:sfdc-config>
-    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="54e14680-50a2-4f3b-a1d4-3b6bfe7c170c">
-		<http:listener-connection host="0.0.0.0" port="8081" />
-	</http:listener-config>
-	<sdc:sdc-config name="Salesforce_Data_Cloud_config" doc:name="Salesforce Data Cloud config" doc:id="805f94ee-d9fd-4c2c-9994-37a4b0fac4b1" >
-		<sdc:oauth-jwt-connection consumerKey="3MVG98Gq2O8Po4Zn0eG1sxld0Ht.hMevcZ_Dc7BP8Fe_QkaSXBnd_7oNxQdFuWWLadOKqvI.ymMMRR5NLI14h" keyStorePath="/Users/spajon/AnypointStudio/studio-workspace/switcheesalesforcesync/src/main/resources/keystore.jks" storePassword="salesforce1" keyAlias="mulesoftd360" subject="sfs@sfs-566.demo" audienceUrl="https://login.salesforce.com"/>
-	</sdc:sdc-config>
 	<flow name="SwitcheeSFDCSyncSingleProperty">
         <scheduler doc:name="Scheduler Once a Day" doc:id="cc071d6d-5dda-4ebb-86d7-6a0377f9c857" >
 			<scheduling-strategy >
-				<fixed-frequency frequency="1" timeUnit="DAYS"/>
+				<fixed-frequency frequency="${scheduler.single.property.frequency}" timeUnit="DAYS"/>
 			</scheduling-strategy>
 		</scheduler>
-		<http:request config-ref="Request-config" doc:id="fc5dee40-2249-4cfc-a075-03a95167da58" doc:name="Request for Switchee API Token" method="POST" path="/oauth2/token">
-            <http:body><![CDATA[grant_type=client_credentials&scope=https://api.demo.switchee.co/api.client]]></http:body>
+		<http:request config-ref="Switchee_Auth_API_Config" doc:id="fc5dee40-2249-4cfc-a075-03a95167da58" doc:name="Request for Switchee API Token" method="POST" path="${switchee.auth.api.token.path}">
+            <http:body><![CDATA[${switchee.oauth.grant.type}=client_credentials&scope=${switchee.oauth.scope}]]></http:body>
             <http:headers><![CDATA[#[output application/java
 ---
 {
-	"Authorization" : "Basic NnJkOWttaHBtNTJ2cHFmMDlidDNhY3AzcXM6MTVmZzBxbGt0ZzN0ZXJrNmkyaHAxZGdrcGVodTBxbmJmZWhkdnBrODk5bnZ1N2o3OW44MA==",
-	"Content-Type" : "application/x-www-form-urlencoded"
+	"Authorization" : "${switchee.oauth.client.credentials}",
+	"Content-Type" : "${content.type.form.urlencoded}"
 }]]]></http:headers>
         </http:request>
-        <http:request config-ref="Request-config-insights" doc:id="37d49346-60b7-4980-a57a-7c9dcf35cdcf" doc:name="Request Property Insights" path="v3.0/properties/{propertyId}/insights">
+        <http:request config-ref="Switchee_Insights_API_Config" doc:id="37d49346-60b7-4980-a57a-7c9dcf35cdcf" doc:name="Request Property Insights" path="${switchee.insights.api.version}/properties/{propertyId}/insights">
             <http:headers><![CDATA[#[output application/java
 ---
 {
-	"x-api-key" : "XM07YrqlaK9ebIZyRl2rf5nwChdlWTRr3UBkKCym",
+	"x-api-key" : "${switchee.insights.api.key}",
     "Authorization" : "Bearer " ++ payload.access_token
 }]]]></http:headers>
             <http:uri-params><![CDATA[#[output application/java
 ---
 {
-	"propertyId" : "790247e4-61d1-4fe4-aa6c-8aa0bc4e0531"
+	"propertyId" : "${property.id}"
 }]]]></http:uri-params>
         </http:request>
         <logger doc:id="0597c5b5-e095-49d1-ac99-190ffabb8421" doc:name="Logger" message="payload"></logger>
@@ -50,11 +35,11 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
                 <logger doc:id="e38d124b-948e-43b9-bd33-33ba069e32a8" doc:name="Logger" message="Empty payload for insights on this property"></logger>
             </when>
             <otherwise>
-                <salesforce:update doc:name="Update Asset insights" doc:id="553d100f-0c0e-43e5-81ef-c0047f1f6c91" type="Asset" config-ref="Sfdc-config">
+                <salesforce:update doc:name="Update Asset insights" doc:id="553d100f-0c0e-43e5-81ef-c0047f1f6c91" type="Asset" config-ref="Salesforce_Config">
                 <salesforce:records><![CDATA[#[output application/java
 ---
 [{
-	Id: "02i7R00001CRxEZQA1",
+	Id: "${asset.id}",
 	Mould_Risk__c: (payload.data filter ($.code == "CDM"))[0].reportedLevel,
 	Fuel_Poverty_Risk__c: (payload.data filter ($.code == "FP"))[0].reportedLevel,
 	Heat_Loss_Rate__c: (payload.data filter ($.code == "HLR"))[0].reportedLevel,
@@ -70,16 +55,16 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<flow name="SwitcheeD360TabSyncDemo" doc:id="fd998e39-f56c-4cc0-bb34-bac0c050045e">
 		<scheduler doc:name="Scheduler Once a Day" doc:id="f7df048b-4879-4bb6-b667-ea44a1d46395" >
 			<scheduling-strategy >
-				<fixed-frequency frequency="1" timeUnit="MINUTES" />
+				<fixed-frequency frequency="${scheduler.d360.sync.frequency}" timeUnit="MINUTES" />
 			</scheduling-strategy>
 		</scheduler>
-		<http:request doc:name="Request for Switchee API Token" doc:id="3dea0876-7e6a-4939-ba35-87d6c222fe5c" config-ref="Request-config" method="POST" path="/oauth2/token">
-			<http:body><![CDATA[grant_type=client_credentials&scope=https://api.demo.switchee.co/api.client]]></http:body>
+		<http:request doc:name="Request for Switchee API Token" doc:id="3dea0876-7e6a-4939-ba35-87d6c222fe5c" config-ref="Switchee_Auth_API_Config" method="POST" path="${switchee.auth.api.token.path}">
+			<http:body><![CDATA[${switchee.oauth.grant.type}=client_credentials&scope=${switchee.oauth.scope}]]></http:body>
 			<http:headers><![CDATA[#[output application/java
 ---
 {
-	"Authorization" : "Basic NnJkOWttaHBtNTJ2cHFmMDlidDNhY3AzcXM6MTVmZzBxbGt0ZzN0ZXJrNmkyaHAxZGdrcGVodTBxbmJmZWhkdnBrODk5bnZ1N2o3OW44MA==",
-	"Content-Type" : "application/x-www-form-urlencoded"
+	"Authorization" : "${switchee.oauth.client.credentials}",
+	"Content-Type" : "${content.type.form.urlencoded}"
 }]]]></http:headers>
 		</http:request>
 		<set-variable value="#[payload.access_token]" doc:name="storeAccessToken" doc:id="4fdec69e-f28f-453b-9ba9-ab3d67aa9bc1" variableName="accessToken"/>
@@ -98,11 +83,11 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		</choice>
 	</flow>
 	<sub-flow name="Fetch_next_page" doc:id="9c3870e5-865c-4372-abcd-fbc12d0b484c">
-		<http:request doc:name="Request Property Insights" doc:id="0d326845-5dab-40ac-bf04-bc85aa8464a6" config-ref="Request-config-insights" path="v3.0/insights">
+		<http:request doc:name="Request Property Insights" doc:id="0d326845-5dab-40ac-bf04-bc85aa8464a6" config-ref="Switchee_Insights_API_Config" path="${switchee.insights.api.version}/insights">
 			<http:headers><![CDATA[#[output application/java
 ---
 {
-	"x-api-key" : "XM07YrqlaK9ebIZyRl2rf5nwChdlWTRr3UBkKCym",
+	"x-api-key" : "${switchee.insights.api.key}",
     "Authorization" : "Bearer " ++ vars.accessToken
 }]]]></http:headers>
 			<http:query-params><![CDATA[#[if (vars.continuationToken != null) {continuationToken: vars.continuationToken} else {}]]]></http:query-params>
@@ -145,7 +130,7 @@ output application/json
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
-				<sdc:insert-objects doc:name="Streaming - Insert Insights" doc:id="0304a3fd-0041-42ca-a5aa-29fe4a8e8427" sourceNameUriParam="Switchee_property_insight" config-ref="Salesforce_Data_Cloud_config" objectNameUriParam="Switchee_Property_Insight">
+				<sdc:insert-objects doc:name="Streaming - Insert Insights" doc:id="0304a3fd-0041-42ca-a5aa-29fe4a8e8427" sourceNameUriParam="${salesforce.data.cloud.source.name}" config-ref="Salesforce_Data_Cloud_Config" objectNameUriParam="${salesforce.data.cloud.object.name}">
 				</sdc:insert-objects>
 			</otherwise>
 		</choice>

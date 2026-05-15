@@ -1,6 +1,7 @@
 {
-    "minMuleVersion": "4.11.0",
-    "javaSpecificationVersions": [
-      "17"
-    ]
+  "name": "switchee-insights",
+  "minMuleVersion": "4.6.0",
+  "javaSpecificationVersions": [
+    "17"
+  ]
 }

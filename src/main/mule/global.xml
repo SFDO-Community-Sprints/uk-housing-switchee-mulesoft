@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+    
+    <configuration-properties file="config.properties" doc:name="Configuration properties"/>
+    
+    <http:listener-config name="HTTP_Listener_Config" doc:name="HTTP Listener Config" doc:description="Configures inbound HTTP listener for receiving requests">
+        <http:listener-connection host="${http.host}" port="${http.port}" doc:name="HTTP Listener Connection" doc:description="Defines host, port and protocol support for HTTP listener">
+            <http:protocol-support />
+        </http:listener-connection>
+    </http:listener-config>
+    
+    <http:request-config name="Switchee_API_Config" doc:name="Switchee API Config" doc:description="Configures outbound HTTP requests to the Switchee API service">
+        <http:request-connection host="${switchee.api.host}" port="${switchee.api.port}" protocol="${switchee.api.protocol}" doc:name="HTTP Request Connection" doc:description="Defines connection settings and protocol support for HTTP requests">
+            <http:authentication>
+                <http:basic-authentication username="${switchee.api.username}" password="${switchee.api.password}"/>
+            </http:authentication>
+        </http:request-connection>
+    </http:request-config>
+    
+</mule>

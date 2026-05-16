@@ -7,8 +7,9 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<fixed-frequency frequency="${scheduler.single.property.frequency}" timeUnit="DAYS"/>
 			</scheduling-strategy>
 		</scheduler>
+		<logger level="DEBUG" doc:name="Log Auth Request" doc:id="debug-auth-1" message="Switchee Auth Request - Scope: ${switchee.oauth.scope}, Auth Header: ${switchee.oauth.client.credentials}"/>
 		<http:request config-ref="Switchee_Auth_API_Config" doc:id="fc5dee40-2249-4cfc-a075-03a95167da58" doc:name="Request for Switchee API Token" method="POST" path="${switchee.auth.api.token.path}">
-            <http:body><![CDATA[${switchee.oauth.grant.type}=client_credentials&scope=${switchee.oauth.scope}]]></http:body>
+            <http:body><![CDATA[grant_type=client_credentials&scope=${switchee.oauth.scope}]]></http:body>
             <http:headers><![CDATA[#[output application/java
 ---
 {
@@ -16,6 +17,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	"Content-Type" : "${content.type.form.urlencoded}"
 }]]]></http:headers>
         </http:request>
+		<logger level="DEBUG" doc:name="Log Auth Response" doc:id="debug-auth-2" message="Switchee Auth Response: #[payload]"/>
         <http:request config-ref="Switchee_Insights_API_Config" doc:id="37d49346-60b7-4980-a57a-7c9dcf35cdcf" doc:name="Request Property Insights" path="${switchee.insights.api.version}/properties/{propertyId}/insights">
             <http:headers><![CDATA[#[output application/java
 ---
@@ -59,7 +61,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			</scheduling-strategy>
 		</scheduler>
 		<http:request doc:name="Request for Switchee API Token" doc:id="3dea0876-7e6a-4939-ba35-87d6c222fe5c" config-ref="Switchee_Auth_API_Config" method="POST" path="${switchee.auth.api.token.path}">
-			<http:body><![CDATA[${switchee.oauth.grant.type}=client_credentials&scope=${switchee.oauth.scope}]]></http:body>
+			<http:body><![CDATA[grant_type=client_credentials&scope=${switchee.oauth.scope}]]></http:body>
 			<http:headers><![CDATA[#[output application/java
 ---
 {

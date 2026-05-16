@@ -50,7 +50,7 @@ switchee.auth.api.token.path=/oauth2/token
 switchee.insights.api.host=api.demo.switchee.co
 switchee.insights.api.port=443
 switchee.insights.api.protocol=HTTPS
-switchee.insights.api.key=XM07YrqlaK9ebIZyRl2rf5nwChdlWTRr3UBkKCym
+switchee.insights.api.key=your-x-api-key
 switchee.insights.api.version=v3.0
 ```
 
@@ -66,25 +66,25 @@ switchee.oauth.scope=https://api.demo.switchee.co/api.client
 ```properties
 # Salesforce connection settings
 salesforce.url=https://login.salesforce.com/services/Soap/u/61.0
-salesforce.username=sfs@sfs-566.demo
-salesforce.password=Salesforce1
+salesforce.username=your-username
+salesforce.password=your-password
 
 # Salesforce Data Cloud settings
 salesforce.data.cloud.consumer.key=[consumer-key]
-salesforce.data.cloud.keystore.path=/path/to/keystore.jks
-salesforce.data.cloud.store.password=salesforce1
-salesforce.data.cloud.key.alias=mulesoftd360
-salesforce.data.cloud.subject=sfs@sfs-566.demo
+salesforce.data.cloud.keystore.path=path-to-your-keystore
+salesforce.data.cloud.store.password=your-keystore-password
+salesforce.data.cloud.key.alias=your-keystore-alias
+salesforce.data.cloud.subject=your-dc-subject
 salesforce.data.cloud.audience.url=https://login.salesforce.com
-salesforce.data.cloud.source.name=Switchee_property_insight
-salesforce.data.cloud.object.name=Switchee_Property_Insight
+salesforce.data.cloud.source.name=your-dc-ingestion-api-source-name
+salesforce.data.cloud.object.name=your-dc-ingestion-api-object-name
 ```
 
 #### 5. Business Configuration
 ```properties
 # Business-specific identifiers
-property.id=790247e4-61d1-4fe4-aa6c-8aa0bc4e0531
-asset.id=02i7R00001CRxEZQA1
+property.id=your -property-id
+asset.id-your-asset-id
 ```
 
 #### 6. Scheduling Configuration

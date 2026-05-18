@@ -21,7 +21,7 @@ TBD
 ## How to Contribute:
 - Review the [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) to understand environment setup and property file structure
 - Clone the repo and configure your environment-specific `.properties` files (do not commit credentials)
-- Submit pull requests against the `master` branch with clear descriptions of changes
+- Submit pull requests against the `master` branch with clear descriptions of changes 
 
 ## Project Resources and Documentation
 - [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) — full guide to environment configuration, Maven profiles, and deployment

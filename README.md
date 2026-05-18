@@ -40,7 +40,7 @@ TBD
 
 Full Name            | Team Role     | Github Username                                                        | Working Group?
 ------------         | ------------- | -------------                                                          | -------------
-Stephane Pajon       | Contributor   | [spajon-muley](https://github.com/spajon-muley)                        |
+Stephane Pajon       | Contributor   | [spajon-muley](https://github.com/spajon-muley)                        | MuleSoft
 
 ## Future Contributions
 (AKA what were you unable to finish at the Sprint)

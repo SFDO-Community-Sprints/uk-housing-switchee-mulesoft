@@ -1,7 +1,6 @@
 # UK Housing - Switchee MuleSoft Integration
 
-# Project Name
-Switchee Insights MuleSoft Integration
+# AHA Switchee Insights MuleSoft Integration
 
 # Project Overview
 ## Vision & Goals
@@ -16,7 +15,7 @@ This project provides a MuleSoft integration layer between the [Switchee](https:
 Housing (Other)
 
 ## Trailblazer Group or Slack Channel Link (access required)
-Please replace with the URL for your Trailblazer Community group and/or Slack channel issued by the Commons program team.
+TBD
 
 ## How to Contribute:
 - Review the [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) to understand environment setup and property file structure

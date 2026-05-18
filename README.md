@@ -1,50 +1,51 @@
-# uk-housing-switchee-mulesoft
-
-This is a sample README.md file you can use to update your project. New project repos will use this template when they are created.
+# UK Housing - Switchee MuleSoft Integration
 
 # Project Name
-Please replace with your projects name
+Switchee Insights MuleSoft Integration
 
 # Project Overview
 ## Vision & Goals
-Please replace with your projects vision.
-* Goal 1
-* Goal 2
+This project provides a MuleSoft integration layer between the [Switchee](https://www.switchee.co) smart heating API and Salesforce, enabling housing providers to surface real-time property health insights directly within their Salesforce org and Salesforce Data Cloud.
+
+* Authenticate with the Switchee OAuth API and retrieve property-level insights (mould risk, fuel poverty risk, heat loss rate, heat stroke risk, time to heat)
+* Sync single-property insights daily to a Salesforce Asset record via scheduled flow
+* Stream paginated bulk insights from the Switchee API into Salesforce Data Cloud via a second scheduled flow
+* Externalise all configuration (credentials, endpoints, schedules) into environment-specific property files, following MuleSoft best practices
 
 ## Project Vertical
-Please replace with Nonprofit, Education, or Other (if Other, explain further)
+Housing (Other)
 
 ## Trailblazer Group or Slack Channel Link (access required)
 Please replace with the URL for your Trailblazer Community group and/or Slack channel issued by the Commons program team.
 
 ## How to Contribute:
-- Way 1.
-- Way 2. 
-- Way 3. 
+- Review the [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) to understand environment setup and property file structure
+- Clone the repo and configure your environment-specific `.properties` files (do not commit credentials)
+- Submit pull requests against the `master` branch with clear descriptions of changes
 
 ## Project Resources and Documentation
-Documentation can be found in the repository [wiki] (URL for wiki where docs are stored)
-
+- [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) — full guide to environment configuration, Maven profiles, and deployment
+- MuleSoft documentation: https://docs.mulesoft.com/general/
+- Switchee API documentation: https://www.switchee.co
 
 ***
-BELOW CONTENT TO USE TO CREATE YOUR FIRST WIKI PAGE TO HOUSE DETAILS ABOUT YOUR SPRINT PARTICIPATION. 
-1. Cut the below from the readme and paste into a new Wiki page. Delete these instructions.
-2. Update that wiki page with details from the Sprint. 
-3. Copy that format for the next Sprint.
 
-# Sprint (DATE): 
+# Sprint (18 May 2026):
 ## Project Team & Accomplishments
-Add details here - what you did, links to docs if there are any, etc.
+- Initial MuleSoft project created with two integration flows: single-property daily sync to Salesforce Asset and bulk paginated sync to Salesforce Data Cloud
+- All configuration externalised into environment-specific property files (`config-dev`, `config-test`, `config-prod`)
+- Maven profiles added to support multi-environment builds and CloudHub deployment
+- Global connector configurations updated to reference externalised properties
 
 ## Contributors
 
-Full Name            | Team Role     | Github Username                                    | Working Group? 
-------------         | ------------- | -------------                                      |-------------   
-Enter persons name   | Group Leader  | [fakeusername](https://github.com/fakeusername)    | 
-Enter persons name   | Contributor   |                                                    | Enter working group name
+Full Name            | Team Role     | Github Username                                                        | Working Group?
+------------         | ------------- | -------------                                                          | -------------
+Stephane Pajone      | Contributor   | [spajon-muley](https://github.com/spajon-muley)                        |
 
-## Future Contributions 
+## Future Contributions
 (AKA what were you unable to finish at the Sprint)
-Replace with the goals your team would like to continue working on next time.
-
-***
+- Expand single-property flow to iterate over multiple properties rather than a single hardcoded `property.id`
+- Add error handling and dead-letter queue for failed Salesforce updates
+- Add MUnit tests for both flows
+- Document Salesforce Data Cloud ingestion API object schema

@@ -1,0 +1,141 @@
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:sdc="http://www.mulesoft.org/schema/mule/sdc" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:switchee-client-api="http://www.mulesoft.org/schema/mule/switchee-client-api" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd  http://www.mulesoft.org/schema/mule/switchee-client-api http://www.mulesoft.org/schema/mule/switchee-client-api/current/mule-switchee-client-api.xsd  http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/sdc http://www.mulesoft.org/schema/mule/sdc/current/mule-sdc.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="SwitcheeSFDCSyncSingleProperty">
+        <scheduler doc:name="Scheduler Once a Day" doc:id="cc071d6d-5dda-4ebb-86d7-6a0377f9c857" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="${scheduler.single.property.frequency}" timeUnit="DAYS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="DEBUG" doc:name="Log Auth Request" doc:id="debug-auth-1" message="Switchee Auth Request - Scope: ${switchee.oauth.scope}, Auth Header: ${switchee.oauth.client.credentials}"/>
+		<http:request config-ref="Switchee_Auth_API_Config" doc:id="fc5dee40-2249-4cfc-a075-03a95167da58" doc:name="Request for Switchee API Token" method="POST" path="${switchee.auth.api.token.path}">
+            <http:body><![CDATA[grant_type=client_credentials&scope=${switchee.oauth.scope}]]></http:body>
+            <http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "${switchee.oauth.client.credentials}",
+	"Content-Type" : "${content.type.form.urlencoded}"
+}]]]></http:headers>
+        </http:request>
+		<logger level="DEBUG" doc:name="Log Auth Response" doc:id="debug-auth-2" message="Switchee Auth Response: #[payload]"/>
+        <http:request config-ref="Switchee_Insights_API_Config" doc:id="37d49346-60b7-4980-a57a-7c9dcf35cdcf" doc:name="Request Property Insights" path="${switchee.insights.api.version}/properties/{propertyId}/insights">
+            <http:headers><![CDATA[#[output application/java
+---
+{
+	"x-api-key" : "${switchee.insights.api.key}",
+    "Authorization" : "Bearer " ++ payload.access_token
+}]]]></http:headers>
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"propertyId" : "${property.id}"
+}]]]></http:uri-params>
+        </http:request>
+        <logger doc:id="0597c5b5-e095-49d1-ac99-190ffabb8421" doc:name="Logger" message="payload"></logger>
+        <choice doc:id="b66d5796-e3a4-4105-83d1-5953a7182d74" doc:name="Is Payload Empty">
+            <when expression="isEmpty(payload)">
+                <logger doc:id="e38d124b-948e-43b9-bd33-33ba069e32a8" doc:name="Logger" message="Empty payload for insights on this property"></logger>
+            </when>
+            <otherwise>
+                <salesforce:update doc:name="Update Asset insights" doc:id="553d100f-0c0e-43e5-81ef-c0047f1f6c91" type="Asset" config-ref="Salesforce_Config">
+                <salesforce:records><![CDATA[#[output application/java
+---
+[{
+	Id: "${asset.id}",
+	Mould_Risk__c: (payload.data filter ($.code == "CDM"))[0].reportedLevel,
+	Fuel_Poverty_Risk__c: (payload.data filter ($.code == "FP"))[0].reportedLevel,
+	Heat_Loss_Rate__c: (payload.data filter ($.code == "HLR"))[0].reportedLevel,
+	Heat_Stroke_Risk__c: (payload.data filter ($.code == "HS"))[0].reportedLevel,
+	Time_to_Heat__c: (payload.data filter ($.code == "TTH"))[0].reportedLevel
+}]]]]></salesforce:records>
+            </salesforce:update>
+                <logger doc:name="Logger" doc:id="66779683-c1ab-4630-9b38-611b34620024" message="payload.successful"/>
+                
+            </otherwise>
+        </choice>
+    </flow>
+	<flow name="SwitcheeD360TabSyncDemo" doc:id="fd998e39-f56c-4cc0-bb34-bac0c050045e">
+		<scheduler doc:name="Scheduler Once a Day" doc:id="f7df048b-4879-4bb6-b667-ea44a1d46395" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="${scheduler.d360.sync.frequency}" timeUnit="MINUTES" />
+			</scheduling-strategy>
+		</scheduler>
+		<http:request doc:name="Request for Switchee API Token" doc:id="3dea0876-7e6a-4939-ba35-87d6c222fe5c" config-ref="Switchee_Auth_API_Config" method="POST" path="${switchee.auth.api.token.path}">
+			<http:body><![CDATA[grant_type=client_credentials&scope=${switchee.oauth.scope}]]></http:body>
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "${switchee.oauth.client.credentials}",
+	"Content-Type" : "${content.type.form.urlencoded}"
+}]]]></http:headers>
+		</http:request>
+		<set-variable value="#[payload.access_token]" doc:name="storeAccessToken" doc:id="4fdec69e-f28f-453b-9ba9-ab3d67aa9bc1" variableName="accessToken"/>
+		<set-variable value="#[true]" doc:name="Initialize hasNext&#10;" doc:id="9f2508df-b471-4eaf-9918-0bc99a2c8dd2" variableName="hasNext" />
+		<set-variable doc:name="Initialize continuationToken" doc:id="2167ed60-205b-42f2-aba0-8bd5adb60160" variableName="continuationToken" value="#[null]"/>
+		<set-variable value="#[[]]" doc:name="Initialize Results Array" doc:id="9964a05c-65fd-41f2-b992-1f4358355684" variableName="results" />
+		<flow-ref doc:name="Ftech Next Page" doc:id="085d0101-59c6-4bf5-9b95-3a617d9ee8ab" name="Fetch_next_page" />
+		<choice doc:name="Continue Pagination?" doc:id="60ba72b5-7b1d-4410-b44b-2ec9111c084b">
+			<when expression="#[vars.hasNext]">
+				<logger level="INFO" doc:name="Logger" doc:id="1bb89b0d-6005-4b45-b3a1-d18f40600f8d" message="Empty payload for insights on this property" />
+				<flow-ref doc:name="Fetch Next Page" doc:id="0ee83061-1176-42c9-9d59-248e4fa488fb" name="Fetch_next_page" />
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Logger" doc:id="6f4d7e76-5368-4d50-b22b-eebfaa0cf6c1" message="payload" />
+			</otherwise>
+		</choice>
+	</flow>
+	<sub-flow name="Fetch_next_page" doc:id="9c3870e5-865c-4372-abcd-fbc12d0b484c">
+		<http:request doc:name="Request Property Insights" doc:id="0d326845-5dab-40ac-bf04-bc85aa8464a6" config-ref="Switchee_Insights_API_Config" path="${switchee.insights.api.version}/insights">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"x-api-key" : "${switchee.insights.api.key}",
+    "Authorization" : "Bearer " ++ vars.accessToken
+}]]]></http:headers>
+			<http:query-params><![CDATA[#[if (vars.continuationToken != null) {continuationToken: vars.continuationToken} else {}]]]></http:query-params>
+		</http:request>
+		<set-variable value="#[payload]" doc:name="Store API Response" doc:id="6c146923-b0e1-45ce-88a5-76c7747f329d" variableName="apiResponse" />
+		<set-variable value="#[vars.apiResponse.pagination.hasNext default false]" doc:name="Set hasNext" doc:id="f30ab5f0-e6be-410c-9bb2-cd1919b398c4" variableName="hasNext" />
+		<set-variable value="#[vars.apiResponse.pagination.continuationToken default null]" doc:name="Set continuationToken" doc:id="72c73f9a-5a1b-4213-bfe7-a988dd94ccdb" variableName="continuationToken" />
+		<ee:transform doc:name="Set results" doc:id="81ee387f-a160-4554-8329-8baea73580f4">
+	    <ee:variables>                                                                                                                              
+	      <ee:set-variable variableName="results"><![CDATA[%dw 2.0
+output application/java                                                                                                                       
+---                  
+(vars.results as Array default []) ++ ((vars.apiResponse.data default []) as Array)]]></ee:set-variable>                                               
+	    </ee:variables>                                                                                                                             
+	  </ee:transform>
+		<choice doc:name="Choice" doc:id="0102d2c5-4fab-4f2d-960b-bf2fcd51d168" >
+			<when expression="#[vars.hasNext]">
+				<logger level="INFO" doc:name="Logger" doc:id="192dda2a-538c-4f1d-a1ef-f188f92ddbb0" message="payload" />
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="513b6f87-edb5-4ea2-b06c-43b4267ac42b">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+ {                                                                                                                                             
+    data: vars.results map (item) -> {
+      Record_ID:          item.propertyUID ++ "_" ++ item.contextDate ++ "_" ++ item.code,                           
+      Property_UID:       item.propertyUID,                                                                                                     
+      Context_Date:       item.contextDate,                                                                                                     
+      Insight_Code:       item.code,                                                                                                            
+      Insight_Version:    item.version,                                                                                                         
+      Reported_Level:     item.reportedLevel,                                                                                                   
+      Mould_Risk_Pct:     item.insightData.riskPercentage default null,                                                                         
+      Mould_Risk_Status:  item.insightData.status default null,                                                                                 
+      Time_To_Heat_Hours: item.insightData.timeToHeat default null,                                                                             
+      Heat_Loss_Rate:     item.insightData.heatLossRate default null,                                                                           
+      Overheating_Peak:   item.insightData.peakLevel default null                                                                               
+    }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<sdc:insert-objects doc:name="Streaming - Insert Insights" doc:id="0304a3fd-0041-42ca-a5aa-29fe4a8e8427" sourceNameUriParam="${salesforce.data.cloud.source.name}" config-ref="Salesforce_Data_Cloud_Config" objectNameUriParam="${salesforce.data.cloud.object.name}">
+				</sdc:insert-objects>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="7423c038-0c93-43ff-9516-4c94a6848cd1" message="payload" />         
+	</sub-flow>
+</mule>

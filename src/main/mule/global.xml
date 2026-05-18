@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" 
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+      xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+      xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" 
+      xmlns:sdc="http://www.mulesoft.org/schema/mule/sdc" 
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd 
+                          http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+                          http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+                          http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+                          http://www.mulesoft.org/schema/mule/sdc http://www.mulesoft.org/schema/mule/sdc/current/mule-sdc.xsd">
+    
+    <configuration-properties file="config.properties" doc:name="Configuration properties"/>
+    
+    <http:listener-config name="HTTP_Listener_Config" doc:name="HTTP Listener Config" doc:description="Configures inbound HTTP listener for receiving requests">
+        <http:listener-connection host="${http.host}" port="${http.port}" doc:name="HTTP Listener Connection" doc:description="Defines host, port and protocol support for HTTP listener">
+            <http:protocol-support />
+        </http:listener-connection>
+    </http:listener-config>
+    
+    <http:request-config name="Switchee_API_Config" doc:name="Switchee API Config" doc:description="Configures outbound HTTP requests to the Switchee API service">
+        <http:request-connection host="${switchee.api.host}" port="${switchee.api.port}" protocol="${switchee.api.protocol}" doc:name="HTTP Request Connection" doc:description="Defines connection settings and protocol support for HTTP requests">
+            <http:authentication>
+                <http:basic-authentication username="${switchee.api.username}" password="${switchee.api.password}"/>
+            </http:authentication>
+        </http:request-connection>
+    </http:request-config>
+    
+    <http:request-config name="Switchee_Auth_API_Config" doc:name="Switchee Auth API Config" doc:description="Configures outbound HTTP requests to the Switchee Auth API service">
+        <http:request-connection host="${switchee.auth.api.host}" port="${switchee.auth.api.port}" protocol="${switchee.auth.api.protocol}" doc:name="Switchee Auth API Connection">
+        </http:request-connection>
+    </http:request-config>
+    
+    <http:request-config name="Switchee_Insights_API_Config" doc:name="Switchee Insights API Config" doc:description="Configures outbound HTTP requests to the Switchee Insights API service">
+        <http:request-connection host="${switchee.insights.api.host}" port="${switchee.insights.api.port}" protocol="${switchee.insights.api.protocol}" doc:name="Switchee Insights API Connection">
+        </http:request-connection>
+    </http:request-config>
+    
+    <salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:description="Configures Salesforce connection">
+        <salesforce:basic-connection url="${salesforce.url}" 
+                                   username="${salesforce.username}" 
+                                   password="${salesforce.password}" />
+    </salesforce:sfdc-config>
+    
+    <sdc:sdc-config name="Salesforce_Data_Cloud_Config" doc:name="Salesforce Data Cloud Config" doc:description="Configures Salesforce Data Cloud connection">
+        <sdc:oauth-jwt-connection consumerKey="${salesforce.data.cloud.consumer.key}" 
+                                keyStorePath="${salesforce.data.cloud.keystore.path}" 
+                                storePassword="${salesforce.data.cloud.store.password}" 
+                                keyAlias="${salesforce.data.cloud.key.alias}" 
+                                subject="${salesforce.data.cloud.subject}" 
+                                audienceUrl="${salesforce.data.cloud.audience.url}"/>
+    </sdc:sdc-config>
+    
+</mule>

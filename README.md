@@ -1,5 +1,3 @@
-# UK Housing - Switchee MuleSoft Integration
-
 # AHA Switchee Insights MuleSoft Integration
 
 # Project Overview
@@ -10,6 +8,9 @@ This project provides a MuleSoft integration layer between the [Switchee](https:
 * Sync single-property insights daily to a Salesforce Asset record via scheduled flow
 * Stream paginated bulk insights from the Switchee API into Salesforce Data Cloud via a second scheduled flow
 * Externalise all configuration (credentials, endpoints, schedules) into environment-specific property files, following MuleSoft best practices
+
+<img width="1710" height="1051" alt="image" src="https://github.com/user-attachments/assets/2924f684-54ef-4e17-b6f8-3e031dee9b49" />
+
 
 ## Project Vertical
 Housing (Other)

@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+      xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+                          http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+                          http://www.mulesoft.org/schema/mule/munit-tools http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+
+    <munit:config name="switchee-insights-test-suite.xml"/>
+
+    <!-- ============================================================ -->
+    <!-- Test 1: SwitcheeSFDCSyncSingleProperty - Happy Path          -->
+    <!-- ============================================================ -->
+    <munit:test name="SwitcheeSFDCSyncSingleProperty-happy-path"
+                description="Happy path: Auth returns token, Insights returns all codes, Salesforce update called once with correct mapped values"
+                doc:name="Switchee SFDC Sync Single Property Happy Path">
+        <munit:behavior>
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock Switchee Auth HTTP Request">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Auth_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{access_token: "test-access-token", token_type: "bearer", expires_in: 3600}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock Switchee Insights HTTP Request">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Insights_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{data: [{code: "CDM", reportedLevel: "HIGH"}, {code: "FP", reportedLevel: "LOW"}, {code: "HLR", reportedLevel: "MEDIUM"}, {code: "HS", reportedLevel: "NONE"}, {code: "TTH", reportedLevel: "VERY_HIGH"}]}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="salesforce:update"
+                                   doc:name="Mock Salesforce Update">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Config"/>
+                    <munit-tools:with-attribute attributeName="type" whereValue="Asset"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{successful: true}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit:set-event doc:name="Set Initial Event">
+                <munit:payload value="#[{}]"/>
+            </munit:set-event>
+        </munit:behavior>
+
+        <munit:execution>
+            <flow-ref name="SwitcheeSFDCSyncSingleProperty" doc:name="Call Switchee SFDC Sync Flow"/>
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that expression="#[payload]"
+                                     is="#[MunitTools::notNullValue()]"
+                                     doc:name="Assert Payload Not Null"/>
+            <munit-tools:verify-call processor="salesforce:update"
+                                     doc:name="Verify Salesforce Update Called Once"
+                                     times="1">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Config"/>
+                </munit-tools:with-attributes>
+            </munit-tools:verify-call>
+        </munit:validation>
+    </munit:test>
+
+    <!-- ============================================================ -->
+    <!-- Test 2: SwitcheeSFDCSyncSingleProperty - Empty Payload       -->
+    <!-- ============================================================ -->
+    <munit:test name="SwitcheeSFDCSyncSingleProperty-empty-payload"
+                description="Empty payload: Insights API returns empty object, isEmpty(payload)=true, salesforce:update is NEVER called"
+                doc:name="Switchee SFDC Sync Single Property Empty Payload">
+        <munit:behavior>
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock Auth HTTP Request">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Auth_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{access_token: "fake-token", token_type: "Bearer", expires_in: 3600}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock Insights HTTP Request - Empty Response">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Insights_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value="#[{}]"/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="salesforce:update"
+                                   doc:name="Mock Salesforce Update - Should Not Be Called">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{successful: true}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit:set-event doc:name="Set Initial Event">
+                <munit:payload value='#[{}]'/>
+            </munit:set-event>
+        </munit:behavior>
+
+        <munit:execution>
+            <flow-ref name="SwitcheeSFDCSyncSingleProperty" doc:name="Invoke Switchee SFDC Sync Flow"/>
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that expression="#[payload]"
+                                     is="#[MunitTools::notNullValue()]"
+                                     doc:name="Assert Payload Not Null"/>
+            <munit-tools:verify-call processor="salesforce:update"
+                                     doc:name="Verify Salesforce Update Never Called"
+                                     times="0">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Config"/>
+                </munit-tools:with-attributes>
+            </munit-tools:verify-call>
+        </munit:validation>
+    </munit:test>
+
+    <!-- ============================================================ -->
+    <!-- Test 3: SwitcheeD360TabSyncDemo - Single Page Sync           -->
+    <!-- ============================================================ -->
+    <munit:test name="SwitcheeD360TabSyncDemo-single-page-sync"
+                description="Single-page sync: Auth returns token, Fetch_next_page returns hasNext=false, sdc:insert-objects called once"
+                doc:name="Switchee D360 Tab Sync Demo Single Page">
+        <munit:behavior>
+            <munit:set-event doc:name="Initialize Test Event">
+                <munit:payload value='#[{}]'/>
+            </munit:set-event>
+
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock Auth Token Request">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Auth_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{access_token: "test-access-token"}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock Insights API - Single Page">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Insights_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{
+                      data: [
+                        {
+                          propertyUID: "PROP001",
+                          contextDate: "2026-07-01",
+                          code: "MouldRisk",
+                          version: "v1",
+                          reportedLevel: "MEDIUM",
+                          insightData: {
+                            riskPercentage: 42,
+                            status: "AMBER",
+                            timeToHeat: 3.5,
+                            heatLossRate: 1.2,
+                            peakLevel: 27
+                          }
+                        },
+                        {
+                          propertyUID: "PROP002",
+                          contextDate: "2026-07-01",
+                          code: "HeatLoss",
+                          version: "v2",
+                          reportedLevel: "LOW",
+                          insightData: {
+                            riskPercentage: 10,
+                            status: "GREEN",
+                            timeToHeat: 2.0,
+                            heatLossRate: 0.9,
+                            peakLevel: 24
+                          }
+                        }
+                      ],
+                      pagination: {
+                        hasNext: false,
+                        continuationToken: null
+                      }
+                    }]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="sdc:insert-objects"
+                                   doc:name="Mock Data Cloud Insert">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Data_Cloud_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{status: "SUCCESS"}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+        </munit:behavior>
+
+        <munit:execution>
+            <flow-ref name="SwitcheeD360TabSyncDemo" doc:name="Call SwitcheeD360TabSyncDemo"/>
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that expression="#[payload]"
+                                     is="#[MunitTools::notNullValue()]"
+                                     doc:name="Assert Payload Not Null"/>
+            <munit-tools:verify-call processor="sdc:insert-objects"
+                                     doc:name="Verify Data Cloud Insert Called Once"
+                                     times="1">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Data_Cloud_Config"/>
+                </munit-tools:with-attributes>
+            </munit-tools:verify-call>
+        </munit:validation>
+    </munit:test>
+
+    <!-- ============================================================ -->
+    <!-- Test 4: SwitcheeD360TabSyncDemo - Multi-Page Pagination      -->
+    <!-- ============================================================ -->
+    <munit:test name="SwitcheeD360TabSyncDemo-multi-page-pagination"
+                description="Multi-page: Insights returns hasNext=true; flow enters when-branch, calls Fetch_next_page a second time, vars.hasNext remains true"
+                doc:name="Switchee D360 Tab Sync Multi Page Pagination">
+        <munit:behavior>
+            <munit:set-event doc:name="Set Initial Event">
+                <munit:payload value="#[{}]"/>
+            </munit:set-event>
+
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock Switchee Auth Request">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Auth_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{access_token: "token-123"}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock Insights API - Returns hasNext True">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Insights_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{
+                      pagination: {hasNext: true, continuationToken: "ct-1"},
+                      data: [
+                        {
+                          propertyUID: "P1",
+                          contextDate: "2024-01-01",
+                          code: "MR",
+                          version: "v1",
+                          reportedLevel: "HIGH",
+                          insightData: {riskPercentage: 80, status: "ALERT"}
+                        }
+                      ]
+                    }]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="sdc:insert-objects"
+                                   doc:name="Mock SDC Insert Objects">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Data_Cloud_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{status: "SUCCESS"}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+        </munit:behavior>
+
+        <munit:execution>
+            <flow-ref name="SwitcheeD360TabSyncDemo" doc:name="Call Switchee D360 Flow"/>
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that expression="#[payload]"
+                                     is="#[MunitTools::notNullValue()]"
+                                     doc:name="Assert Payload Not Null"/>
+            <munit-tools:assert-that expression="#[vars.hasNext]"
+                                     is="#[MunitTools::equalTo(true)]"
+                                     doc:name="Assert hasNext Is True After When Branch"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- ============================================================ -->
+    <!-- Test 5: Fetch_next_page - Last Page (Transform + Insert)     -->
+    <!-- ============================================================ -->
+    <munit:test name="Fetch-next-page-last-page-maps-and-inserts"
+                description="Fetch_next_page last page: hasNext=false, DataWeave maps results to correct Record_IDs, sdc:insert-objects called once"
+                doc:name="Fetch Next Page Last Page Test">
+        <munit:behavior>
+            <set-variable variableName="accessToken" value="testAccessToken"
+                          doc:name="Set Access Token Variable"/>
+            <set-variable variableName="results" value="#[[]]"
+                          doc:name="Set Results Variable"/>
+
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock HTTP Request - Last Page">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Insights_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{
+                      pagination: {
+                        hasNext: false,
+                        continuationToken: null
+                      },
+                      data: [
+                        {
+                          propertyUID: "PROP001",
+                          contextDate: "2024-12-01",
+                          code: "MouldRisk",
+                          version: "v1",
+                          reportedLevel: "HIGH",
+                          insightData: {
+                            riskPercentage: 78,
+                            status: "AT_RISK",
+                            timeToHeat: 2.5,
+                            heatLossRate: 1.2,
+                            peakLevel: 30
+                          }
+                        },
+                        {
+                          propertyUID: "PROP002",
+                          contextDate: "2024-12-02",
+                          code: "HeatLoss",
+                          version: "v3",
+                          reportedLevel: "MEDIUM",
+                          insightData: {
+                            riskPercentage: 20,
+                            status: "OK",
+                            timeToHeat: 1.1,
+                            heatLossRate: 0.8,
+                            peakLevel: 25
+                          }
+                        }
+                      ]
+                    }]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="sdc:insert-objects"
+                                   doc:name="Mock SDC Insert Objects">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Data_Cloud_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{status: "success"}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit:set-event doc:name="Set Initial Event">
+                <munit:payload value='#[{}]'/>
+            </munit:set-event>
+        </munit:behavior>
+
+        <munit:execution>
+            <flow-ref name="Fetch_next_page" doc:name="Invoke Fetch Next Page Sub-Flow"/>
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that expression="#[payload]"
+                                     is="#[MunitTools::notNullValue()]"
+                                     doc:name="Assert Payload Not Null"/>
+            <munit-tools:assert-that expression="#[payload.data]"
+                                     is="#[MunitTools::notNullValue()]"
+                                     doc:name="Assert Data Array Not Null"/>
+            <munit-tools:assert-that expression="#[sizeOf(payload.data)]"
+                                     is="#[MunitTools::greaterThan(0)]"
+                                     doc:name="Assert Data Array Not Empty"/>
+            <munit-tools:assert-equals actual="#[payload.data[0].Record_ID]"
+                                       expected="#['PROP001_2024-12-01_MouldRisk']"
+                                       doc:name="Assert First Record ID"/>
+            <munit-tools:assert-equals actual="#[payload.data[1].Record_ID]"
+                                       expected="#['PROP002_2024-12-02_HeatLoss']"
+                                       doc:name="Assert Second Record ID"/>
+            <munit-tools:verify-call processor="sdc:insert-objects"
+                                     doc:name="Verify SDC Insert Called Once"
+                                     times="1">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Data_Cloud_Config"/>
+                </munit-tools:with-attributes>
+            </munit-tools:verify-call>
+        </munit:validation>
+    </munit:test>
+
+    <!-- ============================================================ -->
+    <!-- Test 6: Fetch_next_page - With Continuation Token            -->
+    <!-- ============================================================ -->
+    <munit:test name="Fetch-next-page-with-continuation-token"
+                description="Fetch_next_page intermediate page: hasNext=true, continuationToken set, sdc:insert-objects NEVER called"
+                doc:name="Fetch Next Page With Continuation Token Test">
+        <munit:behavior>
+            <set-variable variableName="accessToken" value="test-access-token"
+                          doc:name="Set Access Token Variable"/>
+            <set-variable variableName="results" value="#[[]]"
+                          doc:name="Set Results Variable"/>
+
+            <munit-tools:mock-when processor="http:request"
+                                   doc:name="Mock HTTP Request - Intermediate Page">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Switchee_Insights_API_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{
+                      pagination: {
+                        hasNext: true,
+                        continuationToken: "abc-token-123"
+                      },
+                      data: [
+                        {
+                          propertyUID: "PROP001",
+                          contextDate: "2024-10-01",
+                          code: "MouldRisk",
+                          version: "v1",
+                          reportedLevel: "MEDIUM",
+                          insightData: {
+                            riskPercentage: 42,
+                            status: "ELEVATED",
+                            timeToHeat: 1.5,
+                            heatLossRate: 3.2,
+                            peakLevel: 0
+                          }
+                        }
+                      ]
+                    }]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+
+            <munit-tools:mock-when processor="sdc:insert-objects"
+                                   doc:name="Mock SDC Insert - Should Not Be Called">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Data_Cloud_Config"/>
+                </munit-tools:with-attributes>
+                <munit-tools:then-return>
+                    <munit-tools:payload value='#[{status: "SUCCESS"}]'/>
+                </munit-tools:then-return>
+            </munit-tools:mock-when>
+        </munit:behavior>
+
+        <munit:execution>
+            <flow-ref name="Fetch_next_page" doc:name="Invoke Fetch Next Page Sub-Flow"/>
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that expression="#[vars.hasNext]"
+                                     is="#[MunitTools::equalTo(true)]"
+                                     doc:name="Assert hasNext Is True"/>
+            <munit-tools:assert-equals actual="#[vars.continuationToken]"
+                                       expected="#['abc-token-123']"
+                                       doc:name="Assert Continuation Token Value"/>
+            <munit-tools:assert-that expression="#[payload]"
+                                     is="#[MunitTools::notNullValue()]"
+                                     doc:name="Assert Payload Not Null"/>
+            <munit-tools:verify-call processor="sdc:insert-objects"
+                                     doc:name="Verify SDC Insert Never Called"
+                                     times="0">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="config-ref" whereValue="Salesforce_Data_Cloud_Config"/>
+                </munit-tools:with-attributes>
+            </munit-tools:verify-call>
+        </munit:validation>
+    </munit:test>
+
+</mule>
